@@ -40,6 +40,7 @@ const sendPushNotification = (fcmToken, title, body, imageUrl) => {
 // API endpoint to send notification
 app.post('/send-notification', (req, res) => {
   const { fcmToken, title, body, imageUrl } = req.body;
+  console.log(fcmToken, title, body, imageUrl);
 
   // Validate request data
   if (!fcmToken || !title || !body || !imageUrl) {
