@@ -24,32 +24,66 @@ app.get('/', (req, res) => {
   res.send('✅ Server is running!');
 });
 
-const sendPushNotification = (fcmToken, title, body, imageUrl) => {
-  const message = {
+// Function to send multiple notifications with custom data
+const sendPushNotifications = (tokens, notificationData) => {
+  const messages = tokens.map(token => ({
+    token,
     notification: {
-      title,
-      body,
-      image: imageUrl,
+      title: notificationData.title,
+      body: notificationData.body,
+      image: notificationData.imageUrl || undefined,
     },
-    token: fcmToken,
-  };
+    data: {
+      screen: notificationData.screen || '',
+      senderId: notificationData.senderId || '',
+      postId: notificationData.postId || '',
+      type: notificationData.type || '',
+    },
+    android: {
+      priority: 'high',
+    },
+    apns: {
+      headers: {
+        'apns-priority': '10',
+      },
+    },
+  }));
 
-  return admin.messaging().send(message);
+  return admin.messaging().sendAll(messages);
 };
 
+// API endpoint to receive notification payload from frontend
 app.post('/send-notification', async (req, res) => {
-  const { fcmToken, title, body, imageUrl } = req.body;
+  const {
+    tokens,
+    title,
+    body,
+    imageUrl,
+    screen,
+    senderId,
+    postId,
+    type,
+  } = req.body;
 
-  if (!fcmToken || !title || !body) {
-    return res.status(400).json({ error: 'Missing parameters' });
+  if (!tokens || !Array.isArray(tokens) || tokens.length === 0 || !title || !body) {
+    return res.status(400).json({ error: 'Missing or invalid parameters' });
   }
 
   try {
-    const response = await sendPushNotification(fcmToken, title, body, imageUrl);
-    res.status(200).json({ success: 'Notification sent successfully!', response });
+    const response = await sendPushNotifications(tokens, {
+      title,
+      body,
+      imageUrl,
+      screen,
+      senderId,
+      postId,
+      type,
+    });
+
+    res.status(200).json({ success: 'Notifications sent successfully!', response });
   } catch (error) {
-    console.error('❌ Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+    console.error('❌ Error sending notifications:', error);
+    res.status(500).json({ error: 'Failed to send notifications', details: error.message });
   }
 });
 
