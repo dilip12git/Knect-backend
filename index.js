@@ -1,60 +1,58 @@
-// server.js
-require('dotenv').config();  // Load environment variables from .env file
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
 
-// Initialize the app with Firebase Admin SDK using environment variable
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+let serviceAccount;
+try {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+} catch (error) {
+  console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY', error);
+  process.exit(1);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// Middleware to parse incoming JSON requests
 app.use(bodyParser.json());
 
-// Function to send push notification with an image
+app.get('/', (req, res) => {
+  res.send('✅ Server is running!');
+});
+
 const sendPushNotification = (fcmToken, title, body, imageUrl) => {
   const message = {
     notification: {
-      title: title,
-      body: body,
-      image: imageUrl,  // Image URL to be displayed in the notification
+      title,
+      body,
+      image: imageUrl,
     },
-    token: fcmToken, // FCM token of the target device
+    token: fcmToken,
   };
 
-  admin.messaging().send(message)
-    .then((response) => {
-      console.log('Successfully sent message:', response);
-    })
-    .catch((error) => {
-      console.log('Error sending message:', error);
-    });
+  return admin.messaging().send(message);
 };
 
-// API endpoint to send notification
-app.post('/send-notification', (req, res) => {
+app.post('/send-notification', async (req, res) => {
   const { fcmToken, title, body, imageUrl } = req.body;
-  console.log(fcmToken, title, body, imageUrl);
 
-  // Validate request data
-  if (!fcmToken || !title || !body || !imageUrl) {
-    return res.status(400).send({ error: 'Missing parameters' });
+  if (!fcmToken || !title || !body) {
+    return res.status(400).json({ error: 'Missing parameters' });
   }
 
-  // Send push notification
-  sendPushNotification(fcmToken, title, body, imageUrl);
-
-  // Respond to the client
-  res.status(200).send({ success: 'Notification sent successfully!' });
+  try {
+    const response = await sendPushNotification(fcmToken, title, body, imageUrl);
+    res.status(200).json({ success: 'Notification sent successfully!', response });
+  } catch (error) {
+    console.error('❌ Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+  }
 });
 
-// Start the server
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
