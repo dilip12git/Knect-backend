@@ -26,8 +26,8 @@ app.get('/', (req, res) => {
 
 // Function to send multiple notifications with custom data
 const sendPushNotifications = (tokens, notificationData) => {
-  const messages = tokens.map(token => ({
-    token,
+  return admin.messaging().sendMulticast({
+    tokens,
     notification: {
       title: notificationData.title,
       body: notificationData.body,
@@ -47,9 +47,7 @@ const sendPushNotifications = (tokens, notificationData) => {
         'apns-priority': '10',
       },
     },
-  }));
-
-  return admin.messaging().sendAll(messages);
+  });
 };
 
 // API endpoint to receive notification payload from frontend
