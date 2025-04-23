@@ -26,28 +26,34 @@ app.get('/', (req, res) => {
 
 // Function to send multiple notifications with custom data
 const sendPushNotifications = (tokens, notificationData) => {
-  return admin.messaging().sendMulticast({
-    tokens,
-    notification: {
-      title: notificationData.title,
-      body: notificationData.body,
-      image: notificationData.imageUrl || undefined,
-    },
-    data: {
-      screen: notificationData.screen || '',
-      senderId: notificationData.senderId || '',
-      postId: notificationData.postId || '',
-      type: notificationData.type || '',
-    },
-    android: {
-      priority: 'high',
-    },
-    apns: {
-      headers: {
-        'apns-priority': '10',
+  const promises = tokens.map(token => {
+    const message = {
+      token,
+      notification: {
+        title: notificationData.title,
+        body: notificationData.body,
+        image: notificationData.imageUrl || undefined,
       },
-    },
+      data: {
+        screen: notificationData.screen || '',
+        senderId: notificationData.senderId || '',
+        postId: notificationData.postId || '',
+        type: notificationData.type || '',
+      },
+      android: {
+        priority: 'high',
+      },
+      apns: {
+        headers: {
+          'apns-priority': '10',
+        },
+      },
+    };
+
+    return admin.messaging().send(message);
   });
+
+  return Promise.all(promises); // Will return an array of results
 };
 
 // API endpoint to receive notification payload from frontend
