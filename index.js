@@ -39,6 +39,7 @@ const sendPushNotifications = (tokens, notificationData) => {
         senderId: notificationData.senderId || '',
         postId: notificationData.postId || '',
         type: notificationData.type || '',
+        actionKey: notificationData.actionKey || '',
       },
       android: {
         priority: 'high',
