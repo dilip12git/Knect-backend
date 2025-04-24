@@ -68,6 +68,7 @@ app.post('/send-notification', async (req, res) => {
     senderId,
     postId,
     type,
+    actionKey,
   } = req.body;
 
   if (!tokens || !Array.isArray(tokens) || tokens.length === 0 || !title || !body) {
@@ -83,6 +84,7 @@ app.post('/send-notification', async (req, res) => {
       senderId,
       postId,
       type,
+      actionKey,
     });
 
     res.status(200).json({ success: 'Notifications sent successfully!', response });
